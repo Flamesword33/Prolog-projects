@@ -1,0 +1,369 @@
+% Santa's Stable Puzzle.pro
+%
+% by Nathan Pelletier
+% Published:
+%
+% Solves the santa stable logic problem.
+% Facts:
+%   reigndeer: Dasher, Prancer, Vinxen, Comet, Blitzen, Rudolf
+%   lives in tundra area: 1,2,3,4,5,6
+%     smaller values are west of larger values
+%   elf names: Alabaster Snowball, Bushy Evergreen, Pepper Minstix,
+%     Shinny Upatree, Sugarplum Mary, Wunorse Openslae
+%   # of toys made before ride: 7,9,10,12,14,15
+%
+% Rules:
+%   1. Rudolf is 2 or more homes east of WunorseOpenslae's reindeer
+%   2. The reindeer of the elf that made nine toys lives somewhere to
+%      the west of Alabaster Snowball's reindeer.
+%   3. Three reindeer in consecutive areas, from west to east, are Dasher,
+%      Alabaster Snowball's reindeer, and the reindeer of the elf that
+%      made 12 toys.
+%   4. The elf who rode Rudolf has made three toys more
+%      than the one who rode the reindeer in area 4, while Pepper
+%      Minstix made three toys more than Sugarplum Mary. All four elves
+%      mentioned here are unique.
+%   5. Comets rider made three toys more than Shinny Upatree, who in
+%      turn made two toys more than the elf who rode Vixen. The elf who
+%      rode Vixen is Shinny Upatree, Sugarplum Mary or Wunorse Onenslae.
+%   6. Blitzen lives somewhere to the west of Bushy Evergreens reindeer.
+%   7. Alabaster Snowball made exactly one toy more than Wunorse
+%      Openslae.
+%   8. Pepper Minstix didn't ride the reindeer from area 6.
+%
+%
+%
+% Current Bugs:
+%   Rule1 works
+%   Rule2 works
+%   Rule3 works
+%   Rule4a works no clue what it returns
+%   Rule4b gives only 10 and 7
+%   Rule4c might be correct, no way to test
+%   Rule5a gives only 12 and 9 (15,12 should work too)
+%   Rule5b gives only 9 and 7
+%   Rule5c gives sugarplumMary only (wonorse should work too)
+%   Rule6 works
+%   Rule7 gives only 15 and 14(10 and 9 should work too)
+%   Rule8 works
+%
+%   Problem: spot 6 is always: Comet, bushy evergreen, 12
+%   spot 4 needs to be 12
+%
+%   could be rule 3 or rule 5a
+%   after thourough testing, it is not rule 3...
+%
+%
+
+
+% facts
+
+% solution
+% reindeer, elfName, numberOfToysMade
+solution([[_,_,_], % area 1
+          [_,_,_], % area 2
+          [_,_,_], % area 3
+          [_,_,_], % area 4
+          [_,_,_], % area 5
+          [_,_,_]]). % area 6
+
+%rules
+
+% start
+% calls all other rules in santa's stable puzzle
+% establishes the rules of the game
+solve :-
+    solution(S),
+    member([rudolf,_,_], S),
+    member([dasher,_,_], S),
+    member([prancer,_,_], S),
+    member([vixen,_,_], S),
+    member([blitzen,_,_], S),
+    member([comet,_,_], S),
+    member([_,wunorseOpenslae,_],S),
+    member([_,shinnyUpatree,_],S),
+    member([_,pepperMinstix,_], S),
+    member([_,bushyEvergreen,_], S),
+    member([_,alabasterSnowball,_],S),
+    member([_,sugarplumMary,_],S),
+    member([_,_,7],S),
+    member([_,_,9],S),
+    member([_,_,10],S),
+    member([_,_,12],S),
+    member([_,_,14],S),
+    member([_,_,15],S),
+% remember to remove before handing in, just helps to remove rudolf from
+% spot 4 as rudolf at spot 4 is a problem
+    temporaryFix(S),
+    rule1(S),
+    rule2(S),
+    rule3(S),
+    rule4(S),
+    rule5(S),
+    rule6(S),
+    rule7(S),
+    rule8(S),
+    fixTheOutput(S).
+
+% rule1(list)
+% Rudolf is 2 or more homes east of WunorseOpenslae's reindeer
+% FULLY TESTED
+rule1(S) :-
+    twoOrMoreEastOf([rudolf,_,_], [_,wunorseOpenslae,_], S).
+
+
+% rule2(list)
+% Alabaster Snowball is somewhere east of
+% the elf that made nine toys
+% FULLY TESTED
+rule2(S) :-
+    somewhereEastOf([_,alabasterSnowball,_],[_,_,9], S).
+
+
+% rule3(list)
+%  Three reindeer live next to each other from west to east, are Dasher,
+%  Alabaster Snowball's reindeer, and the reindeer of the elf that made
+%  12 toys.
+%  initial try is before brute force...
+%  after brute force I have a version that looks at more cases to see if
+%  this method is the problem. After some testing I have determined it
+%  is not
+  rule3(S) :-
+    groupTogether([dasher,_,_],[_,alabasterSnowball,_],[_,_,12], S).
+
+%rule3([[dasher,_,_],[_,alabasterSnowball,_],[_,_,12],_,_,_]).
+%rule3([_,[dasher,_,_],[_,alabasterSnowball,_],[_,_,12],_,_]).
+%rule3([_,_,[dasher,_,_],[_,alabasterSnowball,_],[_,_,12],_]).
+%rule3([_,_,_,[dasher,_,_],[_,alabasterSnowball,_],[_,_,12]]).
+
+%rule3(S) :-
+%    somewhereEastOf([_,_,12], [_,alabasterSnowball,_], S),
+%    somewhereEastOf([_,alabasterSnowball,_],[dasher,_,_],S).
+
+% rule4(list)
+%  Rudolf 3 more toys than area 4
+%  Pepper Minstix 3 more toys than Sugarplum Mary.
+%  All four elves mentioned here are unique.
+%
+%  //////////////////////////////////////////////////////////////////
+%  Elf2 needs to be part of the fourth element///////////////////////
+%  //////////////////////////////////////////////////////////////////
+rule4(S) :-
+    member([rudolf,Elf1,T1], S),
+    member([_,Elf2,T2], S),
+    member([_,pepperMinstix,T3], S),
+    member([_,sugarplumMary,T4], S),
+    moreToys(T1, T2, 3),
+    moreToys(T3, T4, 3),
+    Elf1 \== pepperMinstix,
+    Elf1 \== sugarplumMary,
+    Elf2 \== pepperMinstix,
+    Elf2 \== sugarplumMary,
+    Elf1 \== Elf2.
+   % isInForthSpot(S,Elf2,T2).
+
+
+% rule5(list)
+%  Comets 3 more toys than Shinny Upatree,
+%  Shinny Upatree 2 more toys than Vixen.
+%  Vixens rider is either Shinny Upatree, Sugarplum Mary or Wunorse
+%  Onenslae.
+%
+%  LOGICAL CONTRADICTION: SHINNY HAS 2 MORE TOYS THAN VIXEN'S RIDER BUT
+%  MIGHT BE VIXENS RIDER...
+rule5(S) :-
+    subRule5(S),
+    member([comet,_,T1], S),
+    member([_,shinnyUpatree,T2],S),
+    member([vixen,_,T3],S),
+    moreToys(T1,T2, 3),
+%use if comet-> shinny & comet -> vixen
+%    moreToys(T1,T3, 2).
+%use if comet -> shinny -> vixen
+   moreToys(T2,T3, 2).
+
+
+% subRule5(list)
+subRule5(S) :-
+    member([vixen, shinnyUpatree,_], S).
+subRule5(S) :-
+    member([vixen, sugarplumMary,_], S).
+subRule5(S) :-
+    member([vixen, wunorseOpenslae,_], S).
+
+
+% rule6(list)
+%  Blitzen lives somewhere west of Bushy Evergreen
+rule6(S) :-
+    somewhereEastOf([_,bushyEvergreen,_], [blitzen,_,_], S).
+
+
+% rule7(list)
+%  Alabaster Snowball 1 more toy than Wunorse Openslae
+rule7(S) :-
+    member([_,alabasterSnowball,T1], S),
+    member([_,wunorseOpenslae,T2], S),
+    moreToys(T1, T2, 1).
+
+% rule8(list)
+%  Pepper Minstix isn't area 6
+%
+%  huh neat... just needs to give false when in 6th area
+%  whelp not doesn't always work so i guess its time to brute force...
+%  yuck
+rule8([[_,pepperMinstix,_],_,_,_,_,_]).
+rule8([_,[_,pepperMinstix,_],_,_,_,_]).
+rule8([_,_,[_,pepperMinstix,_],_,_,_]).
+rule8([_,_,_,[_,pepperMinstix,_],_,_]).
+rule8([_,_,_,_,[_,pepperMinstix,_],_]).
+
+
+
+% twoEastOf
+% determines if element is 2 spots east of another element
+twoOrMoreEastOf(E1, E2, [E2,_,_,E1 | _]).
+twoOrMoreEastOf(E1, E2, [E2,_,_,_,E1 |_]).
+twoOrMoreEastOf(E1, E2, [E2,_,_,_,_,E1]).
+twoOrMoreEastOf(E1, E2, [Other | Rest]) :-
+    E2 \== Other,
+    twoOrMoreEastOf(E1, E2, Rest).
+
+
+% eastOf(element, element, list)
+% determines if element is directly east of another element
+% order independent, assumes there is only 1 element1 and element 2
+somewhereEastOf(Element1, Element2, [Element2, Element1 | _]).
+somewhereEastOf(E1,E2, [E2, _, E1|_]).
+somewhereEastOf(E1,E2, [E2,_,_,E1|_]).
+somewhereEastOf(E1,E2, [E2,_,_,_,E1 |_]).
+somewhereEastOf(E1,E2, [E2,_,_,_,_,E1]).
+somewhereEastOf(Element1, Element2, [Other | Rest]) :-
+    Element2 \== Other,
+    somewhereEastOf(Element1, Element2, Rest).
+
+
+% groupTogether(element, element, element, list)
+% determines if elements are in the order they should be
+% assumes that there is only one copy of each element in the list
+groupTogether(E1, E2, E3, [E1, E2, E3 |_]).
+
+groupTogether(E1,E2,E3, [Other | Rest]) :-
+    E1 \== Other,
+    groupTogether(E1,E2,E3, Rest).
+
+
+% moreToys(element, element, int, list)
+% takes two elements and the number of toys element 1 is greater than
+% element 2.
+%
+% had to brute force due to time code took to run...yuck
+% 7, 9, 10, 12, 14, 15
+moreToys(10,9,1).
+moreToys(15,14,1).
+
+moreToys(9,7,2).
+moreToys(12,10,2).
+moreToys(14,12,2).
+
+moreToys(10,7,3).
+moreToys(12,9,3).
+moreToys(15,12,3).
+
+
+% isInForthSpot
+%
+% only true if Elf2 is in the forth spot
+isInForthSpot([_,_,_,[_,Elf2,T2],_,_], Elf2, T2).
+
+% fixTheOuput(list)
+%
+% prints out the output in the format
+% Area  Reindeer  Elf  Toys
+% ----  --------  ---  ----
+% 1     deer1     elf1    #
+% 2     deer2     elf2    #
+% 3     deer3     elf3    #
+% 4     deer4     elf4    #
+% 5     deer5     elf5    #
+% 6     deer6     elf6    #
+fixTheOutput([[A1,B1,C1],
+              [A2,B2,C2],
+              [A3,B3,C3],
+              [A4,B4,C4],
+              [A5,B5,C5],
+              [A6,B6,C6]]) :-
+    write('Area  Reindeer  Elf                 Toys'),
+    nl,
+    write('----  --------  ---                 ----'),
+    nl,
+    write('1     '),
+    whichReindeer(A1),
+    whichElf(B1),
+    write('  '),
+    write(C1),
+    nl,
+    write('2     '),
+    whichReindeer(A2),
+    whichElf(B2),
+    write('  '),
+    write(C2),
+    nl,
+    write('3     '),
+    whichReindeer(A3),
+    whichElf(B3),
+    write('  '),
+    write(C3),
+    nl,
+    write('4     '),
+    whichReindeer(A4),
+    whichElf(B4),
+    write('  '),
+    write(C4),
+    nl,
+    write('5     '),
+    whichReindeer(A5),
+    whichElf(B5),
+    write('  '),
+    write(C5),
+    nl,
+    write('6     '),
+    whichReindeer(A6),
+    whichElf(B6),
+    write('  '),
+    write(C6),
+    nl.
+
+
+whichReindeer(rudolf)  :-
+    write('Rudolf    ').
+whichReindeer(dasher)  :-
+    write('Dasher    ').
+whichReindeer(prancer) :-
+    write('Prancer   ').
+whichReindeer(vixen)   :-
+    write('Vixen     ').
+whichReindeer(blitzen) :-
+    write('Blitzen   ').
+whichReindeer(comet)   :-
+    write('Comet     ').
+
+whichElf(wunorseOpenslae)   :-
+    write('Wunorse Openslae    ').
+whichElf(shinnyUpatree)     :-
+    write('Shinny Upatree      ').
+whichElf(pepperMinstix)     :-
+    write('Pepper Minstix      ').
+whichElf(bushyEvergreen)    :-
+    write('Bushy Evergreen     ').
+whichElf(alabasterSnowball) :-
+    write('Alabaster Snowball  ').
+whichElf(sugarplumMary)     :-
+    write('Sugarplum Mary      ').
+
+
+%remember to remove before handing in
+temporaryFix([[rudolf,_,_],_,_,_,_,_]).
+temporaryFix([_,[rudolf,_,_],_,_,_,_]).
+temporaryFix([_,_,[rudolf,_,_],_,_,_]).
+temporaryFix([_,_,_,_,[rudolf,_,_],_]).
+temporaryFix([_,_,_,_,_,[rudolf,_,_]]).
